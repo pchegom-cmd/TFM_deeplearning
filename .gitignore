@@ -63,3 +63,10 @@ raw images/*
 trainingDataset/*
 *.ai
 *.asv
+
+# Data and results (not shared)
+*.xlsx
+*.csv
+!code/sample_metadata_template.csv
+*.html
+__pycache__/

@@ -1,61 +1,39 @@
-function [BW_clean, BW_skel] = segmentation_postprocessing(segmentedImg, rawImg)
+function [BW_clean, BW_skel] = segmentation_postprocessing(segmentedImg, rawImg, showFigures)
+% SEGMENTATION_POSTPROCESSING Clean a myotube segmentation and skeletonise it.
+%   [BW_clean, BW_skel] = segmentation_postprocessing(segmentedImg, rawImg, showFigures)
+%   segmentedImg : uint8 probability or binary map predicted by the network
+%   rawImg       : raw max-projection image (only used for display)
+%   showFigures  : true to display intermediate results (default false)
+%   BW_clean     : logical mask of myotubes after filtering
+%   BW_skel      : logical skeleton of BW_clean
 
+if nargin < 3
+    showFigures = false;
+end
 
-    % imshow([segmentedImg,rawImg])
-    BW = imbinarize(segmentedImg, 'adaptive'); %% check oversegmentation
-    %[BW] = imbinarize(segmentedImg, 0.95); %%as the model is very precise w
-    
-    SE = strel('disk',5,8);
-    BW_close = imclose(BW,SE); 
+lengthMin = 600;    % minimum object length in pixels (~150 um): removes myoblasts and debris
+areaHoles = 5000;   % holes smaller than this (pixels) are filled
 
-    %imshow([uint8(BW*255),rawImg])
+% Binarise the network output and close small gaps along fibres.
+BW = imbinarize(segmentedImg, 'adaptive');
+BW_close = imclose(BW, strel('disk', 5, 8));
 
-    L_img = bwlabel(BW_close);
-    props = regionprops(L_img,'all');
+% Remove objects shorter than lengthMin (Feret diameter).
+L_img = bwlabel(BW_close);
+props = regionprops(L_img, 'MaxFeretProperties');
+tooShort = find([props.MaxFeretDiameter] < lengthMin);
+BW_filt = BW_close & ~ismember(L_img, tooShort);
 
-    %filter by length
-    lengthMin = 600; % ~150 um
-    objDiameter =[props(:).MaxFeretDiameter]';
+% Fill holes smaller than areaHoles.
+BW_clean = ~bwareaopen(~BW_filt, areaHoles);
 
-    obj2del = find(objDiameter<lengthMin);
+% Skeletonise to describe fibre length and branching.
+BW_skel = bwskel(BW_clean, 'MinBranchLength', lengthMin / 2);
+BW_skel = bwmorph(BW_skel, 'spur', 10);
 
-    BW2del= ismember(L_img,obj2del);
-    BW_filt = BW_close;
-    BW_filt(BW2del)=0;
-
-    %%fill small holes
-    invertedBW = 1- BW_filt;
-    areaHoles = 5000;
-    BW_clean = uint8(1-bwareaopen(invertedBW, areaHoles))*255;
+if showFigures
     figure;
-    imshow([segmentedImg,uint8(BW_clean*255),rawImg])
-
-
-    %%filter by multinucleation. At least 2 nuclei inside.
-
-    L_fibres = bwlabel(BW_clean,8);
-    figure;imshow(uint8(L_fibres))
-    maxValue = max([L_fibres(:)]);
-    cmap = colorcube;
-    cmap(1,:)=[0,0,0];
-    colormap(cmap)
-
-    %%Skeletonize to quantify branching
-    BW_skel = bwskel(imbinarize(BW_clean),'MinBranchLength',lengthMin/2);
-    BW_skel = bwmorph(BW_skel, 'spur', 10);
-
-
-    dil_skel=imdilate(BW_skel, strel('disk',5));
-    imshow([[imadjust(rawImg), segmentedImg];[BW_clean,uint8(dil_skel)*255]])
-
-    % figure; imshow(uint8(skel_clean)*255);
-    % endPoints = bwmorph(skel_clean, 'endpoints');
-    % [y, x] = find(endPoints);
-    % hold on
-    % % Plot red circles around endpoints
-    % viscircles([x, y], repmat(3, length(x), 1), 'Color', 'y', 'LineWidth', 4);
-
-    
-
-
+    imshow([imadjust(rawImg), segmentedImg; uint8(BW_clean) * 255, uint8(imdilate(BW_skel, strel('disk', 5))) * 255]);
+    title('Raw | network output  /  cleaned mask | skeleton');
+end
 end

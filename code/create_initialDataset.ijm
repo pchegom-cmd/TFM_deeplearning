@@ -1,4 +1,5 @@
-// TO HYDE THE WINDOWS
+// Creates the initial training dataset (image crops and automatic masks) from the .lif files.
+// Run in batch mode so image windows are not shown.
 setBatchMode(true);
 
 // Define crop size
@@ -6,7 +7,7 @@ cropSize = 2048;
 numCrops = 5;
 
 // Define output folder
-projectDir = "F:/Lab/MAMDC2/";
+projectDir = getDirectory("Choose the MAMDC2 project folder");
 outputFolder = projectDir + "trainingDataset/";
 rawMyotubesFolder = outputFolder + "rawMyotubes/";
 rawNucleiFolder = outputFolder + "rawNuclei/";

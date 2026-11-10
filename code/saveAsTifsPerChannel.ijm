@@ -1,9 +1,10 @@
-// TO HYDE THE WINDOWS
+// Splits each .lif file into channels and saves max projections (myotubes, nuclei)
+// and the 3D nuclei stack. Run in batch mode so image windows are not shown.
 setBatchMode(true);
 
 
 // Define output folder
-projectDir = "F:/Lab/MAMDC2/";
+projectDir = getDirectory("Choose the MAMDC2 project folder");
 outputFolder = projectDir + "raw images/tifs/";
 rawMyotubesFolder = outputFolder + "rawMyotubesProjection/";
 rawNuclei3DFolder = outputFolder + "rawNuclei3D/";
@@ -22,8 +23,8 @@ if (!File.isDirectory(rawNuclei3DFolder)) {
 
 
 // Define the directory
-//rootPath = projectDir + "raw images/lifs/D2/";
-rootPath = projectDir + "raw images/lifs/D6/";
+// Choose the folder of one time point (e.g. raw images/lifs/D2/ or D6/).
+rootPath = getDirectory("Choose the folder with the .lif files");
 
 // Get the list of all files in the directory
 list = getFileList(rootPath);

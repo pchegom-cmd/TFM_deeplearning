@@ -1,38 +1,25 @@
 function params = myotubes_analysis(BW_clean, BW_skel)
+% MYOTUBES_ANALYSIS Morphological features of the myotubes in one image.
+%   params = myotubes_analysis(BW_clean, BW_skel) returns a struct with one
+%   scalar field per feature. Diameters are in pixels.
+%
+%   Implemented here: fibre diameters, number of fibres, branching and
+%   myotube area. Other features reported in the thesis (fusion index,
+%   nuclei clusters, intensity) are not included in this repository.
 
-%% Fibres diameter quantification. Diameter counted as distance from skeleton point to the closest black pixel.
-%%find approximatly equidistanced points along the individual skeletons
-ptDistance = 300;
-L_skel = bwlabel(BW_skel,8);
-[fibresParams.aveg_meanDiam, fibresParams.std_meanDiam, fibresParams.max_maxDiam, fibresParams.aveg_maxDiam, ....
-    fibresParams.std_maxDiam, fibresParams.aveg_stdDiam, fibresParams.std_stdDiam,fibresParams.avg_diamWholeCulture, fibresParams.std_diamWholeCulture, listOfMeanDiam,listOfMaxDiam,listOfStdDiam] ...
- = diameter_measurement(L_skel,ptDistance);
+ptDistance = 300;   % spacing (pixels) between sampled points along each skeleton
 
-%% number of branching points 
-endPoints = bwmorph(BW_skel, 'endpoints');
-nBranches = 
-minBranchDistance = XXX;
+L_skel = bwlabel(BW_skel, 8);
+params = diameter_measurement(L_skel, BW_clean, ptDistance);
 
+% Number of fibres: connected skeletons.
+params.nFibres = max(L_skel(:));
 
-%% number of myotubes per image
+% Branching: branch points of the skeleton, in total and per fibre.
+branchPoints = bwmorph(BW_skel, 'branchpoints');
+params.totalBranches = nnz(branchPoints);
+params.meanBranches = params.totalBranches / max(params.nFibres, 1);
 
-
-%% myotubes density. 
-
-%% % of area covered my myotubes
-
-%% myotubes length
-
-%% fusion index: nuclei in tubes / total nuclei
-
-%% number of nuclei clusters
-
-%% average nuclei per cluster
-
-%% myofibres intensity level in max projection
-
-%% nuclei number along the image/density
-
-
-
+% Share of the image covered by myotubes (%).
+params.percMyoArea = 100 * nnz(BW_clean) / numel(BW_clean);
 end
